@@ -4,7 +4,7 @@ import javax.swing.*;
 public class Menu extends JFrame {
 
     public Menu() {
-        super("Mapa de Estações");
+        super("Mapa");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1024, 768);
 
@@ -29,13 +29,11 @@ public class Menu extends JFrame {
         lblDataFim.setForeground(Color.WHITE);
         JTextField txtDataFim = new JTextField(10);
 
-        // NOVO: Filtro de Cidade adicionado
         JLabel lblCidade = new JLabel("Cidade:");
         lblCidade.setForeground(Color.WHITE);
         String[] cidades = {"Todas", "Porto Alegre", "Santa Maria", "Caxias do Sul"};
         JComboBox<String> cbCidade = new JComboBox<>(cidades);
 
-        // CORREÇÃO: Filtro de Estação agora com dados de estações (exemplo INMET)
         JLabel lblEstacao = new JLabel("Estação:");
         lblEstacao.setForeground(Color.WHITE);
         String[] estacoes = {"Todas", "A801", "A802", "A803", "OMM-83936"};
@@ -64,7 +62,7 @@ public class Menu extends JFrame {
         btnAplicar.setBackground(Color.lightGray);
         btnAplicar.setFont(new Font("Arial", Font.BOLD, 14));
 
-        // Adiciona os dados ao container na ordem correta
+        // Adiciona os dados ao container 
         painelFiltros.add(lblDataInicio);
         painelFiltros.add(txtDataInicio);
         painelFiltros.add(lblDataFim);
@@ -84,17 +82,17 @@ public class Menu extends JFrame {
         painelFiltros.add(new JLabel("")); 
         painelFiltros.add(btnAplicar);
 
-        //Adiciona o container base ao container principal
+        // Adiciona o container base ao container principal
         painelEsquerdo.add(painelFiltros, BorderLayout.NORTH);
 
         // Cria o painel Direito
         JPanel painelDireito = new JPanel(new BorderLayout());
 
-        // Renderezição do mapa
+        // Espaço para Renderezição do mapa
         JPanel mapPanel = new JPanel();
         mapPanel.setBackground(new Color(230, 230, 230));
         mapPanel.setLayout(new GridBagLayout());
-        mapPanel.add(new JLabel("Área de Renderização JXMapViewer2 (OSM)"));
+        mapPanel.add(new JLabel("MAPA AQUI"));
         painelDireito.add(mapPanel, BorderLayout.CENTER);
 
         // Painel direito inferior
