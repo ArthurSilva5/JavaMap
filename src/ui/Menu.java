@@ -16,29 +16,40 @@ import service.EstacaoService;
 import service.OndaService;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JSplitPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
@@ -53,6 +64,18 @@ public class Menu extends JFrame {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    private static final Color FUNDO_PAINEL = new Color(33, 37, 43);
+    private static final Color FUNDO_CAMPO = new Color(48, 53, 61);
+    private static final Color BORDA_CAMPO = new Color(70, 77, 87);
+    private static final Color TEXTO_ROTULO = new Color(168, 176, 187);
+    private static final Color ACENTO = new Color(56, 132, 222);
+    private static final Color ACENTO_HOVER = new Color(74, 148, 236);
+    private static final Font FONTE_TITULO = new Font("Segoe UI", Font.BOLD, 17);
+    private static final Font FONTE_SUBTITULO = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FONTE_ROTULO = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FONTE_CAMPO = new Font("Segoe UI", Font.PLAIN, 13);
+    private static final Font FONTE_BOTAO = new Font("Segoe UI", Font.BOLD, 14);
+
     private final EstacaoService service = new EstacaoService();
     private final MedicaoDAO medicaoDAO = new MedicaoDAO();
     private final OndaService ondaService = new OndaService();
@@ -64,11 +87,11 @@ public class Menu extends JFrame {
     private final IsotermaPainter isotermaPainter = new IsotermaPainter();
 
     private List<Estacao> estacoesVisiveis = new ArrayList<>();
-    private LocalDate inicioAtual = LocalDate.of(2026, 1, 1);
-    private LocalDate fimAtual = LocalDate.of(2026, 5, 31);
+    private LocalDate inicioAtual = LocalDate.of(2025, 1, 1);
+    private LocalDate fimAtual = LocalDate.of(2025, 5, 31);
 
-    private final JTextField txtDataInicio = new JTextField("01/01/2026");
-    private final JTextField txtDataFim = new JTextField("31/05/2026");
+    private final JTextField txtDataInicio = new JTextField("01/01/2025");
+    private final JTextField txtDataFim = new JTextField("31/05/2025");
     private final JComboBox<String> cbCidade = new JComboBox<>();
     private final JComboBox<String> cbEstacao = new JComboBox<>();
     private final JComboBox<String> cbVariavel = new JComboBox<>(new String[]{"Temperatura", "Chuva", "Umidade"});
@@ -76,18 +99,9 @@ public class Menu extends JFrame {
     private final JComboBox<String> cbModo = new JComboBox<>(new String[]{"Marcadores", "Heatmap", "Zonas de Alerta", "Isócronas"});
     private final JComboBox<String> cbTendencia = new JComboBox<>(new String[]{"7 dias", "15 dias", "30 dias"});
 
-    private final DefaultTableModel modeloTabela = new DefaultTableModel(
-            new Object[]{"Estação", "Cidade", "Temp", "Chuva", "Nível"}, 0) {
-        @Override
-        public boolean isCellEditable(int linha, int coluna) {
-            return false;
-        }
-    };
-    private final JTable tabela = new JTable(modeloTabela);
-
     private final JSlider sliderTempo = new JSlider(0, 100, 100);
-    private final JLabel lblDataInicioSlider = new JLabel("01/01/2026");
-    private final JLabel lblDataFimSlider = new JLabel("31/05/2026");
+    private final JLabel lblDataInicioSlider = new JLabel("01/01/2025");
+    private final JLabel lblDataFimSlider = new JLabel("31/05/2025");
     private final JLabel lblDataAtual = new JLabel(" ");
     private final JButton btnPlay = new JButton("Play");
     private final Timer timerAnimacao = new Timer(450, e -> avancarSlider());
@@ -100,11 +114,13 @@ public class Menu extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 768);
 
+        configurarTemaCombos();
+
         Container c = getContentPane();
         c.setLayout(new BorderLayout());
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, criarPainelEsquerdo(), criarPainelDireito());
-        splitPane.setDividerLocation(320);
+        splitPane.setDividerLocation(340);
         splitPane.setContinuousLayout(true);
         c.add(splitPane, BorderLayout.CENTER);
 
@@ -173,45 +189,181 @@ public class Menu extends JFrame {
 
     private JPanel criarPainelEsquerdo() {
         JPanel painelEsquerdo = new JPanel(new BorderLayout());
-        painelEsquerdo.setPreferredSize(new Dimension(320, 768));
-        painelEsquerdo.setBackground(Color.darkGray);
+        painelEsquerdo.setPreferredSize(new Dimension(340, 768));
+        painelEsquerdo.setBackground(FUNDO_PAINEL);
 
-        JPanel painelFiltros = new JPanel(new GridLayout(9, 2, 5, 5));
-        painelFiltros.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        painelFiltros.setBackground(Color.darkGray);
+        painelEsquerdo.add(criarCabecalho(), BorderLayout.NORTH);
 
-        painelFiltros.add(rotulo("Data Início:"));
-        painelFiltros.add(txtDataInicio);
-        painelFiltros.add(rotulo("Data Fim:"));
-        painelFiltros.add(txtDataFim);
-        painelFiltros.add(rotulo("Cidade:"));
-        painelFiltros.add(cbCidade);
-        painelFiltros.add(rotulo("Estação:"));
-        painelFiltros.add(cbEstacao);
-        painelFiltros.add(rotulo("Variável:"));
-        painelFiltros.add(cbVariavel);
-        painelFiltros.add(rotulo("Limiar Alerta (mm):"));
-        painelFiltros.add(txtLimiar);
-        painelFiltros.add(rotulo("Visualização:"));
-        painelFiltros.add(cbModo);
-        painelFiltros.add(rotulo("Janela Tendência:"));
-        painelFiltros.add(cbTendencia);
+        JPanel painelFiltros = new JPanel();
+        painelFiltros.setLayout(new BoxLayout(painelFiltros, BoxLayout.Y_AXIS));
+        painelFiltros.setBackground(FUNDO_PAINEL);
+        painelFiltros.setBorder(BorderFactory.createEmptyBorder(8, 22, 22, 22));
 
-        JButton btnAplicar = new JButton("Filtrar");
-        btnAplicar.setBackground(Color.lightGray);
-        btnAplicar.setFont(new Font("Arial", Font.BOLD, 14));
-        btnAplicar.addActionListener(e -> atualizarMapa());
-        painelFiltros.add(new JLabel(""));
-        painelFiltros.add(btnAplicar);
+        painelFiltros.add(criarCampo("DATA INÍCIO", estilizarTexto(txtDataInicio)));
+        painelFiltros.add(criarCampo("DATA FIM", estilizarTexto(txtDataFim)));
+        painelFiltros.add(criarCampo("CIDADE", estilizarCombo(cbCidade)));
+        painelFiltros.add(criarCampo("ESTAÇÃO", estilizarCombo(cbEstacao)));
+        painelFiltros.add(criarCampo("VARIÁVEL", estilizarCombo(cbVariavel)));
+        painelFiltros.add(criarCampo("LIMIAR DE ALERTA (mm)", estilizarTexto(txtLimiar)));
+        painelFiltros.add(criarCampo("VISUALIZAÇÃO", estilizarCombo(cbModo)));
+        painelFiltros.add(criarCampo("JANELA DE TENDÊNCIA", estilizarCombo(cbTendencia)));
 
-        painelEsquerdo.add(painelFiltros, BorderLayout.NORTH);
+        painelFiltros.add(Box.createVerticalGlue());
+        painelFiltros.add(criarBotaoFiltrar());
 
-        tabela.setFillsViewportHeight(true);
-        JScrollPane scroll = new JScrollPane(tabela);
-        scroll.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        painelEsquerdo.add(scroll, BorderLayout.CENTER);
+        painelEsquerdo.add(painelFiltros, BorderLayout.CENTER);
 
         return painelEsquerdo;
+    }
+
+    private JPanel criarCabecalho() {
+        JPanel cabecalho = new JPanel();
+        cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
+        cabecalho.setBackground(FUNDO_PAINEL);
+        cabecalho.setBorder(BorderFactory.createEmptyBorder(22, 22, 14, 22));
+
+        JLabel titulo = new JLabel("Estações Meteorológicas");
+        titulo.setForeground(Color.WHITE);
+        titulo.setFont(FONTE_TITULO);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel subtitulo = new JLabel("Filtros de visualização");
+        subtitulo.setForeground(TEXTO_ROTULO);
+        subtitulo.setFont(FONTE_SUBTITULO);
+        subtitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitulo.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+
+        cabecalho.add(titulo);
+        cabecalho.add(subtitulo);
+        return cabecalho;
+    }
+
+    private JPanel criarCampo(String rotuloTexto, JComponent campo) {
+        JPanel bloco = new JPanel();
+        bloco.setLayout(new BoxLayout(bloco, BoxLayout.Y_AXIS));
+        bloco.setBackground(FUNDO_PAINEL);
+        bloco.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bloco.setBorder(BorderFactory.createEmptyBorder(0, 0, 14, 0));
+        bloco.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
+
+        JLabel label = new JLabel(rotuloTexto);
+        label.setForeground(TEXTO_ROTULO);
+        label.setFont(FONTE_ROTULO);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+
+        campo.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        bloco.add(label);
+        bloco.add(campo);
+        return bloco;
+    }
+
+    private JTextField estilizarTexto(JTextField campo) {
+        campo.setBackground(FUNDO_CAMPO);
+        campo.setForeground(Color.WHITE);
+        campo.setCaretColor(Color.WHITE);
+        campo.setFont(FONTE_CAMPO);
+        campo.setBorder(bordaCampo());
+        campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        campo.setPreferredSize(new Dimension(0, 34));
+        return campo;
+    }
+
+    private void configurarTemaCombos() {
+        UIManager.put("ComboBox.background", new ColorUIResource(FUNDO_CAMPO));
+        UIManager.put("ComboBox.foreground", new ColorUIResource(Color.WHITE));
+        UIManager.put("ComboBox.selectionBackground", new ColorUIResource(ACENTO));
+        UIManager.put("ComboBox.selectionForeground", new ColorUIResource(Color.WHITE));
+    }
+
+    private JComboBox<String> estilizarCombo(JComboBox<String> combo) {
+        combo.setUI(new BasicComboBoxUI() {
+            @Override
+            protected JButton createArrowButton() {
+                return criarSetaCombo();
+            }
+        });
+        combo.setBackground(FUNDO_CAMPO);
+        combo.setForeground(Color.WHITE);
+        combo.setFont(FONTE_CAMPO);
+        combo.setBorder(BorderFactory.createLineBorder(BORDA_CAMPO));
+        combo.setFocusable(false);
+        combo.setRenderer(new ComboRenderer());
+        combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        combo.setPreferredSize(new Dimension(0, 34));
+        return combo;
+    }
+
+    private JButton criarSetaCombo() {
+        JButton seta = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(FUNDO_CAMPO);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                int cx = getWidth() / 2;
+                int cy = getHeight() / 2;
+                int[] xs = {cx - 4, cx + 4, cx};
+                int[] ys = {cy - 2, cy - 2, cy + 3};
+                g2.setColor(TEXTO_ROTULO);
+                g2.fillPolygon(xs, ys, 3);
+                g2.dispose();
+            }
+        };
+        seta.setBorder(BorderFactory.createEmptyBorder());
+        seta.setContentAreaFilled(false);
+        seta.setFocusable(false);
+        seta.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        seta.setPreferredSize(new Dimension(26, 34));
+        return seta;
+    }
+
+    private static class ComboRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> lista, Object valor, int indice,
+                                                      boolean selecionado, boolean comFoco) {
+            super.getListCellRendererComponent(lista, valor, indice, selecionado, comFoco);
+            setBackground(selecionado ? ACENTO : FUNDO_CAMPO);
+            setForeground(Color.WHITE);
+            setFont(FONTE_CAMPO);
+            setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            return this;
+        }
+    }
+
+    private Border bordaCampo() {
+        return BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDA_CAMPO),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8));
+    }
+
+    private JButton criarBotaoFiltrar() {
+        JButton btnAplicar = new JButton("Filtrar");
+        btnAplicar.setFont(FONTE_BOTAO);
+        btnAplicar.setForeground(Color.WHITE);
+        btnAplicar.setBackground(ACENTO);
+        btnAplicar.setFocusPainted(false);
+        btnAplicar.setBorderPainted(false);
+        btnAplicar.setOpaque(true);
+        btnAplicar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAplicar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnAplicar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        btnAplicar.setPreferredSize(new Dimension(0, 42));
+        btnAplicar.addActionListener(e -> atualizarMapa());
+        btnAplicar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent ev) {
+                btnAplicar.setBackground(ACENTO_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent ev) {
+                btnAplicar.setBackground(ACENTO);
+            }
+        });
+        return btnAplicar;
     }
 
     private JPanel criarPainelDireito() {
@@ -251,12 +403,6 @@ public class Menu extends JFrame {
 
         painelDireito.add(painelSlider, BorderLayout.SOUTH);
         return painelDireito;
-    }
-
-    private JLabel rotulo(String texto) {
-        JLabel label = new JLabel(texto);
-        label.setForeground(Color.WHITE);
-        return label;
     }
 
     private void carregarCombos() {
@@ -344,7 +490,6 @@ public class Menu extends JFrame {
         isotermaPainter.configurar(filtradas, variavel);
 
         aplicarModo();
-        atualizarTabela(filtradas);
         lblDataAtual.setText("Dia exibido: " + dia.format(FMT));
         mapa.repaint();
     }
@@ -385,19 +530,6 @@ public class Menu extends JFrame {
         }
         estacaoPainter.setMostrarTendencia(tendencia);
         mapa.setOverlayPainter(overlay);
-    }
-
-    private void atualizarTabela(List<Estacao> estacoes) {
-        modeloTabela.setRowCount(0);
-        for (Estacao e : estacoes) {
-            modeloTabela.addRow(new Object[]{
-                    e.getId(),
-                    e.getNome(),
-                    numero(e.getTemperaturaMedia()),
-                    numero(e.getPrecipitacaoTotal()),
-                    e.getNivelAlerta().getRotulo()
-            });
-        }
     }
 
     private int janelaTendencia() {

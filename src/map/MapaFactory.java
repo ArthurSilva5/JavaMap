@@ -35,8 +35,8 @@ public class MapaFactory {
         fabrica.setLocalCache(new FileBasedLocalCache(pastaCache, false));
 
         mapa.setTileFactory(fabrica);
-        mapa.setZoom(7);
-        mapa.setAddressLocation(new GeoPosition(-29.7, -53.2));
+        mapa.setZoom(11);
+        mapa.setAddressLocation(new GeoPosition(-29.67, -52.6));
 
         MouseInputListener arrastar = new PanMouseInputListener(mapa);
         mapa.addMouseListener(arrastar);

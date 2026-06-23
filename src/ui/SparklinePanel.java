@@ -4,6 +4,8 @@ import javax.swing.JPanel;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -22,11 +24,13 @@ public class SparklinePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
-        if (serie == null || serie.size() < 2) {
-            return;
-        }
         Graphics2D g = (Graphics2D) graphics;
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        if (serie == null || serie.size() < 2) {
+            desenharMensagem(g, "Sem dados de temperatura no período");
+            return;
+        }
 
         int margem = 10;
         int largura = getWidth() - 2 * margem;
@@ -61,5 +65,14 @@ public class SparklinePanel extends JPanel {
         for (int i = 0; i < n; i++) {
             g.fillOval(xs[i] - 2, ys[i] - 2, 4, 4);
         }
+    }
+
+    private void desenharMensagem(Graphics2D g, String texto) {
+        g.setColor(new Color(120, 120, 120));
+        g.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        FontMetrics fm = g.getFontMetrics();
+        int x = (getWidth() - fm.stringWidth(texto)) / 2;
+        int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+        g.drawString(texto, x, y);
     }
 }
