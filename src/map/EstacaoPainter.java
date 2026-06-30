@@ -10,7 +10,6 @@ import util.Cores;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
@@ -27,7 +26,6 @@ public class EstacaoPainter implements Painter<JXMapViewer> {
 
     private List<Estacao> estacoes = new ArrayList<>();
     private Variavel variavel = Variavel.TEMPERATURA;
-    private boolean mostrarTendencia = false;
     private final int diametro = 12;
 
     public void setEstacoes(List<Estacao> estacoes) {
@@ -36,10 +34,6 @@ public class EstacaoPainter implements Painter<JXMapViewer> {
 
     public void setVariavel(Variavel variavel) {
         this.variavel = variavel;
-    }
-
-    public void setMostrarTendencia(boolean mostrarTendencia) {
-        this.mostrarTendencia = mostrarTendencia;
     }
 
     @Override
@@ -69,30 +63,7 @@ public class EstacaoPainter implements Painter<JXMapViewer> {
             g.fillOval(x - diametro / 2, y - diametro / 2, diametro, diametro);
             g.setColor(Color.BLACK);
             g.drawOval(x - diametro / 2, y - diametro / 2, diametro, diametro);
-
-            if (mostrarTendencia) {
-                desenharSeta(g, x, y - diametro, estacao.getTendenciaChuva());
-            }
         }
-    }
-
-    private void desenharSeta(Graphics2D g, int x, int y, double tendencia) {
-        if (Math.abs(tendencia) < 0.05) {
-            return;
-        }
-        boolean subindo = tendencia > 0;
-        g.setColor(subindo ? new Color(0, 150, 0) : new Color(200, 60, 0));
-        Polygon seta = new Polygon();
-        if (subindo) {
-            seta.addPoint(x, y - 8);
-            seta.addPoint(x - 5, y);
-            seta.addPoint(x + 5, y);
-        } else {
-            seta.addPoint(x, y);
-            seta.addPoint(x - 5, y - 8);
-            seta.addPoint(x + 5, y - 8);
-        }
-        g.fillPolygon(seta);
     }
 
     private void desenharClusters(Graphics2D g, JXMapViewer mapa, Rectangle viewport) {

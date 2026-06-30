@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,10 +47,6 @@ public class MedicaoDAO {
             throw new RuntimeException("Erro ao calcular acumulados de chuva: " + ex.getMessage(), ex);
         }
         return mapa;
-    }
-
-    public Map<String, List<Double>> seriePrecipitacao(LocalDate inicio, LocalDate fim) {
-        return serie(inicio, fim, "precip_total");
     }
 
     public List<double[]> serieTemperatura(String stationId, LocalDate inicio, LocalDate fim) {
@@ -128,29 +123,6 @@ public class MedicaoDAO {
             throw new RuntimeException("Erro ao buscar série max/min: " + ex.getMessage(), ex);
         }
         return serie;
-    }
-
-    private Map<String, List<Double>> serie(LocalDate inicio, LocalDate fim, String coluna) {
-        String sql =
-                "SELECT station_id, " + coluna + " AS v "
-              + "FROM history_daily "
-              + "WHERE obs_date BETWEEN ? AND ? "
-              + "ORDER BY station_id, obs_date";
-        Map<String, List<Double>> mapa = new LinkedHashMap<>();
-        try (Connection con = Conexao.abrir();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, inicio.toString());
-            ps.setString(2, fim.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String id = rs.getString("station_id");
-                    mapa.computeIfAbsent(id, k -> new ArrayList<>()).add(valor(rs.getBigDecimal("v")));
-                }
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Erro ao buscar série: " + ex.getMessage(), ex);
-        }
-        return mapa;
     }
 
     private static double valor(BigDecimal v) {

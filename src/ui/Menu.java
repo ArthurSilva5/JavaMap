@@ -70,8 +70,6 @@ public class Menu extends JFrame {
     private static final Color TEXTO_ROTULO = new Color(168, 176, 187);
     private static final Color ACENTO = new Color(56, 132, 222);
     private static final Color ACENTO_HOVER = new Color(74, 148, 236);
-    private static final Font FONTE_TITULO = new Font("Segoe UI", Font.BOLD, 17);
-    private static final Font FONTE_SUBTITULO = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Font FONTE_ROTULO = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FONTE_CAMPO = new Font("Segoe UI", Font.PLAIN, 13);
     private static final Font FONTE_BOTAO = new Font("Segoe UI", Font.BOLD, 14);
@@ -88,20 +86,24 @@ public class Menu extends JFrame {
 
     private List<Estacao> estacoesVisiveis = new ArrayList<>();
     private LocalDate inicioAtual = LocalDate.of(2025, 1, 1);
-    private LocalDate fimAtual = LocalDate.of(2025, 5, 31);
+    private LocalDate fimAtual = LocalDate.of(2025, 1, 7);
+    private Variavel variavelAtual = Variavel.TEMPERATURA;
+    private String cidadeAtual = "Todas";
+    private String estacaoAtual = "Todas";
+    private double limiarAtual = 80.0;
+    private String modoAtual = "Marcadores";
 
     private final JTextField txtDataInicio = new JTextField("01/01/2025");
-    private final JTextField txtDataFim = new JTextField("31/05/2025");
+    private final JTextField txtDataFim = new JTextField("07/01/2025");
     private final JComboBox<String> cbCidade = new JComboBox<>();
     private final JComboBox<String> cbEstacao = new JComboBox<>();
     private final JComboBox<String> cbVariavel = new JComboBox<>(new String[]{"Temperatura", "Chuva", "Umidade"});
     private final JTextField txtLimiar = new JTextField("80");
     private final JComboBox<String> cbModo = new JComboBox<>(new String[]{"Marcadores", "Heatmap", "Zonas de Alerta", "Isócronas"});
-    private final JComboBox<String> cbTendencia = new JComboBox<>(new String[]{"7 dias", "15 dias", "30 dias"});
 
     private final JSlider sliderTempo = new JSlider(0, 100, 100);
     private final JLabel lblDataInicioSlider = new JLabel("01/01/2025");
-    private final JLabel lblDataFimSlider = new JLabel("31/05/2025");
+    private final JLabel lblDataFimSlider = new JLabel("07/01/2025");
     private final JLabel lblDataAtual = new JLabel(" ");
     private final JButton btnPlay = new JButton("Play");
     private final Timer timerAnimacao = new Timer(450, e -> avancarSlider());
@@ -127,7 +129,6 @@ public class Menu extends JFrame {
         mapa.setOverlayPainter(estacaoPainter);
         adicionarControlesZoom();
         configurarCliqueNoMarcador();
-        configurarListeners();
         carregarCombos();
         atualizarMapa();
     }
@@ -173,31 +174,15 @@ public class Menu extends JFrame {
         mapa.repaint();
     }
 
-    private void configurarListeners() {
-        cbModo.addActionListener(e -> {
-            aplicarModo();
-            mapa.repaint();
-        });
-        cbVariavel.addActionListener(e -> {
-            Variavel variavel = Variavel.porRotulo((String) cbVariavel.getSelectedItem());
-            estacaoPainter.setVariavel(variavel);
-            heatmapPainter.configurar(estacoesVisiveis, variavel);
-            isotermaPainter.configurar(estacoesVisiveis, variavel);
-            mapa.repaint();
-        });
-    }
-
     private JPanel criarPainelEsquerdo() {
         JPanel painelEsquerdo = new JPanel(new BorderLayout());
         painelEsquerdo.setPreferredSize(new Dimension(340, 768));
         painelEsquerdo.setBackground(FUNDO_PAINEL);
 
-        painelEsquerdo.add(criarCabecalho(), BorderLayout.NORTH);
-
         JPanel painelFiltros = new JPanel();
         painelFiltros.setLayout(new BoxLayout(painelFiltros, BoxLayout.Y_AXIS));
         painelFiltros.setBackground(FUNDO_PAINEL);
-        painelFiltros.setBorder(BorderFactory.createEmptyBorder(8, 22, 22, 22));
+        painelFiltros.setBorder(BorderFactory.createEmptyBorder(22, 22, 22, 22));
 
         painelFiltros.add(criarCampo("DATA INÍCIO", estilizarTexto(txtDataInicio)));
         painelFiltros.add(criarCampo("DATA FIM", estilizarTexto(txtDataFim)));
@@ -206,36 +191,15 @@ public class Menu extends JFrame {
         painelFiltros.add(criarCampo("VARIÁVEL", estilizarCombo(cbVariavel)));
         painelFiltros.add(criarCampo("LIMIAR DE ALERTA (mm)", estilizarTexto(txtLimiar)));
         painelFiltros.add(criarCampo("VISUALIZAÇÃO", estilizarCombo(cbModo)));
-        painelFiltros.add(criarCampo("JANELA DE TENDÊNCIA", estilizarCombo(cbTendencia)));
 
         painelFiltros.add(Box.createVerticalGlue());
+        painelFiltros.add(criarBotaoLimpar());
+        painelFiltros.add(Box.createVerticalStrut(10));
         painelFiltros.add(criarBotaoFiltrar());
 
         painelEsquerdo.add(painelFiltros, BorderLayout.CENTER);
 
         return painelEsquerdo;
-    }
-
-    private JPanel criarCabecalho() {
-        JPanel cabecalho = new JPanel();
-        cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
-        cabecalho.setBackground(FUNDO_PAINEL);
-        cabecalho.setBorder(BorderFactory.createEmptyBorder(22, 22, 14, 22));
-
-        JLabel titulo = new JLabel("Estações Meteorológicas");
-        titulo.setForeground(Color.WHITE);
-        titulo.setFont(FONTE_TITULO);
-        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel subtitulo = new JLabel("Filtros de visualização");
-        subtitulo.setForeground(TEXTO_ROTULO);
-        subtitulo.setFont(FONTE_SUBTITULO);
-        subtitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        subtitulo.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
-
-        cabecalho.add(titulo);
-        cabecalho.add(subtitulo);
-        return cabecalho;
     }
 
     private JPanel criarCampo(String rotuloTexto, JComponent campo) {
@@ -366,6 +330,33 @@ public class Menu extends JFrame {
         return btnAplicar;
     }
 
+    private JButton criarBotaoLimpar() {
+        JButton btnLimpar = new JButton("Remover filtros");
+        btnLimpar.setFont(FONTE_BOTAO);
+        btnLimpar.setForeground(TEXTO_ROTULO);
+        btnLimpar.setBackground(FUNDO_CAMPO);
+        btnLimpar.setFocusPainted(false);
+        btnLimpar.setOpaque(true);
+        btnLimpar.setBorder(BorderFactory.createLineBorder(BORDA_CAMPO));
+        btnLimpar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnLimpar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        btnLimpar.setPreferredSize(new Dimension(0, 42));
+        btnLimpar.addActionListener(e -> limparFiltros());
+        btnLimpar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent ev) {
+                btnLimpar.setBackground(BORDA_CAMPO);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent ev) {
+                btnLimpar.setBackground(FUNDO_CAMPO);
+            }
+        });
+        return btnLimpar;
+    }
+
     private JPanel criarPainelDireito() {
         JPanel painelDireito = new JPanel(new BorderLayout());
         painelDireito.add(mapa, BorderLayout.CENTER);
@@ -435,7 +426,26 @@ public class Menu extends JFrame {
         }
         inicioAtual = inicio;
         fimAtual = fim;
+        variavelAtual = Variavel.porRotulo((String) cbVariavel.getSelectedItem());
+        cidadeAtual = (String) cbCidade.getSelectedItem();
+        estacaoAtual = (String) cbEstacao.getSelectedItem();
+        limiarAtual = limiar();
+        modoAtual = (String) cbModo.getSelectedItem();
         configurarSlider();
+    }
+
+    private void limparFiltros() {
+        if (timerAnimacao.isRunning()) {
+            alternarAnimacao();
+        }
+        txtDataInicio.setText("01/01/2025");
+        txtDataFim.setText("07/01/2025");
+        cbCidade.setSelectedIndex(0);
+        cbEstacao.setSelectedIndex(0);
+        cbVariavel.setSelectedIndex(0);
+        txtLimiar.setText("80");
+        cbModo.setSelectedIndex(0);
+        atualizarMapa();
     }
 
     private void configurarSlider() {
@@ -466,11 +476,11 @@ public class Menu extends JFrame {
 
     private void renderizarDia(LocalDate dia) {
         diaExibido = dia;
-        Variavel variavel = Variavel.porRotulo((String) cbVariavel.getSelectedItem());
-        List<Estacao> dados = service.carregar(dia, dia, janelaTendencia(), limiar());
+        Variavel variavel = variavelAtual;
+        List<Estacao> dados = service.carregar(dia, dia, limiarAtual);
 
-        String cidade = (String) cbCidade.getSelectedItem();
-        String estacao = (String) cbEstacao.getSelectedItem();
+        String cidade = cidadeAtual;
+        String estacao = estacaoAtual;
         List<Estacao> filtradas = new ArrayList<>();
         for (Estacao e : dados) {
             if (estacao != null && !"Todas".equals(estacao) && !e.getId().equals(estacao)) {
@@ -515,9 +525,8 @@ public class Menu extends JFrame {
     }
 
     private void aplicarModo() {
-        String modo = (String) cbModo.getSelectedItem();
+        String modo = modoAtual;
         Painter<JXMapViewer> overlay;
-        boolean tendencia = false;
         if ("Heatmap".equals(modo)) {
             overlay = new CompoundPainter<JXMapViewer>(heatmapPainter, estacaoPainter);
         } else if ("Zonas de Alerta".equals(modo)) {
@@ -526,19 +535,8 @@ public class Menu extends JFrame {
             overlay = new CompoundPainter<JXMapViewer>(isotermaPainter, estacaoPainter);
         } else {
             overlay = estacaoPainter;
-            tendencia = true;
         }
-        estacaoPainter.setMostrarTendencia(tendencia);
         mapa.setOverlayPainter(overlay);
-    }
-
-    private int janelaTendencia() {
-        String texto = (String) cbTendencia.getSelectedItem();
-        try {
-            return Integer.parseInt(texto.split(" ")[0]);
-        } catch (RuntimeException ex) {
-            return 7;
-        }
     }
 
     private double limiar() {
@@ -593,13 +591,17 @@ public class Menu extends JFrame {
                 + "Umidade média: " + numero(e.getUmidadeMedia()) + " %<br>"
                 + "Chuva acumulada: " + numero(e.getPrecipitacaoTotal()) + " mm<br><br>"
                 + "mm24/48/72: " + arredonda(e.getMm24()) + " / " + arredonda(e.getMm48()) + " / " + arredonda(e.getMm72()) + "<br>"
-                + "Nível de alerta: <b>" + e.getNivelAlerta().getRotulo() + "</b><br>"
-                + "Tendência de chuva: " + (e.getTendenciaChuva() > 0.05 ? "crescente" : e.getTendenciaChuva() < -0.05 ? "decrescente" : "estável")
+                + "Nível de alerta: <b>" + e.getNivelAlerta().getRotulo() + "</b>"
                 + "</html>";
         painel.add(new JLabel(html), BorderLayout.NORTH);
 
+        JPanel grafico = new JPanel(new BorderLayout(0, 4));
+        JLabel tituloGrafico = new JLabel("Temperatura média - últimos 7 dias");
+        tituloGrafico.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        grafico.add(tituloGrafico, BorderLayout.NORTH);
         List<double[]> serie = medicaoDAO.serieTemperatura(e.getId(), diaExibido.minusDays(6), diaExibido);
-        painel.add(new SparklinePanel(serie), BorderLayout.CENTER);
+        grafico.add(new SparklinePanel(serie), BorderLayout.CENTER);
+        painel.add(grafico, BorderLayout.CENTER);
 
         String onda = ondaService.diagnosticar(e.getId(), inicioAtual, fimAtual);
         painel.add(new JLabel("<html><b>Ondas:</b> " + onda + "</html>"), BorderLayout.SOUTH);

@@ -16,7 +16,6 @@ public class Estacao {
     private double mm48;
     private double mm72;
     private NivelAlerta nivelAlerta = NivelAlerta.NORMAL;
-    private double tendenciaChuva;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -59,9 +58,6 @@ public class Estacao {
 
     public NivelAlerta getNivelAlerta() { return nivelAlerta; }
     public void setNivelAlerta(NivelAlerta nivelAlerta) { this.nivelAlerta = nivelAlerta; }
-
-    public double getTendenciaChuva() { return tendenciaChuva; }
-    public void setTendenciaChuva(double tendenciaChuva) { this.tendenciaChuva = tendenciaChuva; }
 
     public Double valorDe(Variavel variavel) {
         switch (variavel) {

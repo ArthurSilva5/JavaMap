@@ -13,14 +13,10 @@ public class EstacaoService {
     private final EstacaoDAO estacaoDAO = new EstacaoDAO();
     private final MedicaoDAO medicaoDAO = new MedicaoDAO();
     private final AlagamentoService alagamentoService = new AlagamentoService();
-    private final ChuvaTendenciaService tendenciaService = new ChuvaTendenciaService();
 
-    public List<Estacao> carregar(LocalDate inicio, LocalDate fim, int janelaTendenciaDias, double limiarMm24) {
+    public List<Estacao> carregar(LocalDate inicio, LocalDate fim, double limiarMm24) {
         List<Estacao> estacoes = estacaoDAO.listarComEstatisticas(inicio, fim);
         Map<String, double[]> acumulados = medicaoDAO.acumuladosChuva(fim);
-
-        LocalDate inicioTendencia = fim.minusDays(janelaTendenciaDias - 1);
-        Map<String, List<Double>> series = medicaoDAO.seriePrecipitacao(inicioTendencia, fim);
 
         for (Estacao e : estacoes) {
             double[] acc = acumulados.get(e.getId());
@@ -29,10 +25,6 @@ public class EstacaoService {
                 e.setMm48(acc[1]);
                 e.setMm72(acc[2]);
                 e.setNivelAlerta(alagamentoService.classificarComLimiar(acc[0], acc[1], acc[2], limiarMm24));
-            }
-            List<Double> serie = series.get(e.getId());
-            if (serie != null) {
-                e.setTendenciaChuva(tendenciaService.inclinacao(serie));
             }
         }
         return estacoes;
